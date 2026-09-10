@@ -1,17 +1,29 @@
-VIA_ENABLE          = yes
-VIAL_ENABLE         = yes
-LTO_ENABLE          = yes
+VIA_ENABLE              = yes
+VIAL_ENABLE             = yes
+VIALRGB_ENABLE          = yes
 
-RGBLIGHT_ENABLE     = yes
-RGB_MATRIX_ENABLE   = no # Can't have RGBLIGHT and RGB_MATRIX at the same time.
-MOUSEKEY_ENABLE     = no
-OLED_ENABLE         = no
-OLED_DRIVER         = SSD1306
-EXTRAKEY_ENABLE     = no
-COMBO_ENABLE        = no
+# Hardware on your Holykeebs RP2040 Corne.
+POINTING_DEVICE_ENABLE  = yes
+OLED_ENABLE             = yes
+RGB_MATRIX_ENABLE       = yes
+RGBLIGHT_ENABLE         = no
 
-QMK_SETTINGS        = no
+# Vial/QMK configuration features.
+TAP_DANCE_ENABLE        = yes
+COMBO_ENABLE            = yes
+KEY_OVERRIDE_ENABLE     = yes
+CAPS_WORD_ENABLE        = yes
+LAYER_LOCK_ENABLE       = yes
+REPEAT_KEY_ENABLE       = yes
+DYNAMIC_MACRO_ENABLE    = yes
+QMK_SETTINGS            = yes
 
-CAPS_WORD_ENABLE = no
-LAYER_LOCK_ENABLE = no
-REPEAT_KEY_ENABLE = no
+# General useful keycode families.
+MOUSEKEY_ENABLE         = yes
+EXTRAKEY_ENABLE         = yes
+NKRO_ENABLE             = yes
+GRAVE_ESC_ENABLE        = yes
+SPACE_CADET_ENABLE      = yes
+TRI_LAYER_ENABLE        = yes
+
+LTO_ENABLE              = yes
