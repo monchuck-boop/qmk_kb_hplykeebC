@@ -39,20 +39,14 @@
 // Hires scroll is on (rules.mk), so mousekey wheel events are one notch each.
 #define MOUSEKEY_WHEEL_DELTA 120
 
-// 修正前: #define SPLIT_HAND_PIN GP21
-// 修正前: #define SPLIT_HAND_PIN GP21
-// データ不正エラー(False)を防ぐため、SPLIT_HAND_PINにダミーの安全なピン(GP29)を指定しておく
+// データ不正エラーを防ぐダミーピン
 #define SPLIT_HAND_PIN GP29
 
-// 【本命の修正】物理ピンではなく内部メモリ(EEPROM)で左右の判別を強制固定する
-#define EE_HANDS
+// 【本命の修正】右手(子機)のピンマトリクス定義を、本家基板のDuplex回路(逆ダイオード構造)に強制固定する
+#define MATRIX_ROW_PINS_RIGHT { GP4, GP5, GP6, GP7, GP8 }
+#define MATRIX_COL_PINS_RIGHT { GP29, GP28, GP27, GP26 }
 
 // トラックボールとドラッグスクロールを強制的に有効化
 #define POINTING_DEVICE_ENABLE
 #define KEYBALL_DRAGSCROLL_ENABLE
-
-#ifdef RGB_MATRIX_ENABLE
-#    define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120
-#    define RGB_MATRIX_SLEEP
-#endif
 
