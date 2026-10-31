@@ -21,7 +21,7 @@ jobs:
       with:
         repository: holykeebs/qmk-userspace
         ref: hk-master
-        path: users/holykeebs
+        path: qmk-userspace
         persist-credentials: false
 
     - name: Complete Fix and Build
@@ -33,13 +33,11 @@ jobs:
           sed -i 's/-Werror//g' builddefs/common_rules.mk
         fi
         
-        # 2. 【超重要】関数の未定義エラーを絶対に防ぐため、userspace のソースコードを
-        # キーマップフォルダに直接コピーして一体化させる
-        cp users/holykeebs/*.c keyboards/holykeebs/keyball61/keymaps/vial/ || true
-        cp users/holykeebs/*.h keyboards/holykeebs/keyball61/keymaps/vial/ || true
+        # 2. 【超重要】Holykeebsのビルドシステムが要求するパスにUserspaceの環境変数を確実に通す
+        export QMK_USERSPACE="${GITHUB_WORKSPACE}/qmk-userspace"
         
-        # 3. コンパイルを実行
-        qmk compile -kb holykeebs/keyball61 -km vial -e USER_NAME=holykeebs
+        # 3. qmk compileを使わず、大元のmakeコマンドで確実にuserspaceの関数をすべて結合してビルドする
+        make holykeebs/keyball61:vial -e USER_NAME=holykeebs
 
     - name: Gather Firmware File
       run: |
