@@ -41,6 +41,9 @@
 // 修正前: #define SPLIT_HAND_PIN GP21
 #define SPLIT_HAND_PIN GP29
 #ifdef RGB_MATRIX_ENABLE
+#define POINTING_DEVICE_ENABLE
+#define KEYBALL_DRAGSCROLL_ENABLE
+
 #    define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120  // limit for power consumption
 #    define RGB_MATRIX_SLEEP                   // turn off LEDs when host is asleep
 #endif
