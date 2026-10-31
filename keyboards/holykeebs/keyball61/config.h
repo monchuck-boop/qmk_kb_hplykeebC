@@ -50,3 +50,16 @@
 #    define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120  // limit for power consumption
 #    define RGB_MATRIX_SLEEP                   // turn off LEDs when host is asleep
 #endif
+
+// 古いSPLIT_HAND_PINの指定を完全に消去し、EEPROM判別に切り替える
+#undef SPLIT_HAND_PIN
+#define EE_HANDS
+
+// トラックボールとドラッグスクロールを強制的に有効化
+#define POINTING_DEVICE_ENABLE
+#define KEYBALL_DRAGSCROLL_ENABLE
+
+#ifdef RGB_MATRIX_ENABLE
+#    define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120
+#    define RGB_MATRIX_SLEEP
+#endif
