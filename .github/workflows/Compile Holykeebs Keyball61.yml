@@ -1,40 +1,25 @@
-name: Build Original Keyball61 RP2040 Vial Final Fix
+name: Build Holykeebs Keyball61 Vial Fixed
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Keyball61 Original Board Final Fix
-    runs-on: ubuntu-24.04
+    name: Build Holykeebs Keyball61
+    runs-on: ubuntu-latest
+    container: ghcr.io/qmk/qmk_cli@sha256:2dc05fc9f32efebd6b05c2b8676ee548358bc7e151e9dbf4dac6b6eed4513b07
 
     steps:
     - name: Checkout Vial repo
       uses: actions/checkout@v4
       with:
+        persist-credentials: false
         submodules: recursive
 
-    - name: Setup QMK Environment
+    - name: Build Firmware
       run: |
-        python3 -m pip install --user qmk
-        qmk setup -y -b master
-
-    - name: Download Original Keyball Source
-      run: |
-        # Yowkees氏の公式リポジトリから本家Keyballの回路データを正しいURLでクローンする
-        git clone https://github.com original_keyball
-        mkdir -p keyboards
-        cp -r original_keyball/qmk/keyboards/keyball keyboards/
-
-    - name: Apply Right Thumb Delay Fix
-      run: |
-        # 高速なRP2040で本家のDuplexマトリクス信号を読み飛ばさないよう、電気が流れるのを待つ遅延処理を追加
-        echo "#define MATRIX_IO_DELAY 30" >> keyboards/keyball/keyball61/config.h
-
-    - name: Build Firmware (Original Keyball61 to RP2040)
-      run: |
-        # 本家の配線マトリクスでRP2040用に変換コンパイルを実行
-        make keyball/keyball61:vial -e CONVERT_TO=rp2040
+        git config --global --add safe.directory $(pwd)
+        qmk compile -kb holykeebs/keyball61 -km vial -e USER_NAME=holykeebs
 
     - name: Gather Firmware File
       run: |
@@ -45,5 +30,5 @@ jobs:
     - name: Upload Finished Firmware
       uses: actions/upload-artifact@v4
       with:
-        name: keyball61-original-rp2040-vial-final-fixed
+        name: keyball61-vial-fixed-firmware
         path: output_firmware/
