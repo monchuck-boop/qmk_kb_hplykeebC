@@ -8,21 +8,31 @@ jobs:
     runs-on: ubuntu-latest
     container: qmkfm/qmk_cli:latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          # すべてのGit履歴とサブモジュールを完全に取得してエラー(128)を防ぐ
+          fetch-depth: 0
           submodules: recursive
+
+      - name: Fix Git Trust and Submodules
+        run: |
+          # コンテナ内のセキュリティによるGitエラーを回避する設定
+          git config --global --add safe.directory /__w/monchuck-boop/qmk_kb_hplykeebC
+          git config --global --add safe.directory /__w/monchuck-boop/qmk_kb_hplykeebC/qmk_kb_hplykeebC
+          git submodule update --init --recursive
 
       - name: Fix Python 3.14 Compatibility Error
         run: |
+          # Python 3.14環境用の互換性パッチ
           sed -i 's/ast.Num/ast.Constant/g' lib/python/qmk/math.py
           sed -i 's/node.n/node.value/g' lib/python/qmk/math.py
 
       - name: Compile Firmware
         run: |
-          # qmkの内部データベースにこのフォルダを強制認識させる
+          # ホームディレクトリを今いる場所に固定してセットアップ
           qmk setup -y --home $(pwd)
-          # makeではなく、確実なqmk compileコマンドを使用する（キーマップはvialを指定）
+          # Makeターゲットエラーを回避するため、qmk compileで直接ビルド
           qmk compile -kb holykeebs/keyball61 -km vial
 
       - name: Upload Artifact
