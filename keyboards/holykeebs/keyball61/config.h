@@ -40,19 +40,11 @@
 #define MOUSEKEY_WHEEL_DELTA 120
 
 // 修正前: #define SPLIT_HAND_PIN GP21
+// 修正前: #define SPLIT_HAND_PIN GP21
+// データ不正エラー(False)を防ぐため、SPLIT_HAND_PINにダミーの安全なピン(GP29)を指定しておく
 #define SPLIT_HAND_PIN GP29
 
-// LEDの有無に関わらず、トラックボールとドラッグスクロールを強制的に有効化してエラーを防ぐ
-#define POINTING_DEVICE_ENABLE
-#define KEYBALL_DRAGSCROLL_ENABLE
-
-#ifdef RGB_MATRIX_ENABLE
-#    define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120  // limit for power consumption
-#    define RGB_MATRIX_SLEEP                   // turn off LEDs when host is asleep
-#endif
-
-// 古いSPLIT_HAND_PINの指定を完全に消去し、EEPROM判別に切り替える
-#undef SPLIT_HAND_PIN
+// 【本命の修正】物理ピンではなく内部メモリ(EEPROM)で左右の判別を強制固定する
 #define EE_HANDS
 
 // トラックボールとドラッグスクロールを強制的に有効化
@@ -63,3 +55,4 @@
 #    define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120
 #    define RGB_MATRIX_SLEEP
 #endif
+
