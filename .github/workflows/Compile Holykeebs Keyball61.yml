@@ -8,7 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: qmkfm/qmk_cli:latest
-      # 起動する瞬間（最優先）にGitのエラーを完全に無視する設定を流し込む
       env:
         GIT_CONFIG_COUNT: 1
         GIT_CONFIG_KEY_0: safe.directory
@@ -24,6 +23,11 @@ jobs:
         run: |
           sed -i 's/ast.Num/ast.Constant/g' lib/python/qmk/math.py
           sed -i 's/node.n/node.value/g' lib/python/qmk/math.py
+
+      - name: Fix Holykeebs Custom Keymap Dependency
+        run: |
+          # 存在しない個人用ファイル（users/holykeebs/holykeebs.h）の読み込み行を削除する
+          sed -i '/users\/holykeebs\/holykeebs.h/d' keyboards/holykeebs/keyball61/keymaps/vial/keymap.c
 
       - name: Compile Firmware
         run: |
