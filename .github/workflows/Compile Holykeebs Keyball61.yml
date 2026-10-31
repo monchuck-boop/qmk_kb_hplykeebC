@@ -6,34 +6,25 @@ on:
 jobs:
   build:
     name: Build Keyball61 Original Board Pure Fix
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    container: ghcr.io/qmk/qmk_cli@sha256:2dc05fc9f32efebd6b05c2b8676ee548358bc7e151e9dbf4dac6b6eed4513b07
 
     steps:
     - name: Checkout Vial repo
       uses: actions/checkout@v4
       with:
+        persist-credentials: false
         submodules: recursive
 
-    - name: Setup QMK Environment
+    - name: Apply Right Thumb Delay and Build
       run: |
-        python3 -m pip install --user qmk
-        qmk setup -y -b master
-
-    - name: Download Original Keyball Code
-      run: |
-        # Yowkees氏の公式リポジトリから、本家Keyball61の純粋な基盤定義を合流させる
-        git clone https://github.com original_keyball
-        cp -r original_keyball/qmk/keyboards/keyball keyboards/
-
-    - name: Apply Right Thumb Delay Fix
-      run: |
-        # 【重要】高速なRP2040で本家基盤の信号を読み飛ばさないよう、電気が流れるのを待つ遅延処理を追加
+        git config --global --add safe.directory $(pwd)
+        
+        # 高速なRP2040で本家仕様のDuplexマトリクス信号を読み飛ばさないための遅延対策を追加
         echo "#define MATRIX_IO_DELAY 30" >> keyboards/keyball/keyball61/config.h
-
-    - name: Build Firmware (Original Keyball61 to RP2040)
-      run: |
-        # エラーの原因になるHolykeebs独自の定義は一切使わず、本家基盤×Vial×RP2040コンバットを実行
-        make keyball/keyball61:vial -e CONVERT_TO=rp2040
+        
+        # OLEDは完全無効。本家の配線マトリクスでRP2040用に変換コンパイルを実行
+        qmk compile -kb keyball/keyball61 -km vial -e CONVERT_TO=rp2040
 
     - name: Gather Firmware File
       run: |
