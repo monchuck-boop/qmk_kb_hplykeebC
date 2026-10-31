@@ -1,3 +1,6 @@
+holyベースでコンパイルまで行ったけど親指3キーが効かずに断念
+
+
 # Quantum Mechanical Keyboard Firmware
 
 [![Current Version](https://img.shields.io/github/tag/qmk/qmk_firmware.svg)](https://github.com/qmk/qmk_firmware/tags)
