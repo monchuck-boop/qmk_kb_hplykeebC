@@ -16,10 +16,13 @@ jobs:
         persist-credentials: false
         submodules: recursive
 
-    - name: Fetch Holykeebs Userspace
-      run: |
-        git config --global --add safe.directory $(pwd)
-        git clone https://github.com users/holykeebs
+    - name: Checkout Holykeebs Userspace (Safe Method)
+      uses: actions/checkout@v4
+      with:
+        repository: holykeebs/qmk-userspace
+        ref: hk-master
+        path: users/holykeebs
+        persist-credentials: false
 
     - name: Build Firmware
       run: |
