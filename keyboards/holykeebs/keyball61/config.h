@@ -40,7 +40,7 @@
 #define MOUSEKEY_WHEEL_DELTA 120
 
 // 修正前: #define SPLIT_HAND_PIN GP21
-define SPLIT_HAND_PIN GP29
+#define SPLIT_HAND_PIN GP29
 
 // LEDの有無に関わらず、トラックボールとドラッグスクロールを強制的に有効化してエラーを防ぐ
 #define POINTING_DEVICE_ENABLE
@@ -50,5 +50,3 @@ define SPLIT_HAND_PIN GP29
 #    define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120  // limit for power consumption
 #    define RGB_MATRIX_SLEEP                   // turn off LEDs when host is asleep
 #endif
-#endif
-
