@@ -19,10 +19,11 @@ jobs:
           make holykeebs/keyball61:via OLED=yes
 
       - name: Upload Artifact
-        uses: actions/artifacts@v4
+        uses: actions/upload-artifact@v4
         with:
           name: keyball61_firmware
           path: |
             *.hex
             *.bin
             *.uf2
+
