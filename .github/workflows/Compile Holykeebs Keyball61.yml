@@ -1,4 +1,4 @@
-name: Compile Holykeebs Keyball61　0
+name: Compile Holykeebs Keyball61
 
 on:
   workflow_dispatch:
@@ -13,10 +13,17 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Fix Python 3.14 Compatibility Error
+        run: |
+          sed -i 's/ast.Num/ast.Constant/g' lib/python/qmk/math.py
+          sed -i 's/node.n/node.value/g' lib/python/qmk/math.py
+
       - name: Compile Firmware
         run: |
-          qmk setup -y
-          make holykeebs/keyball61:via OLED=yes
+          # qmkの内部データベースにこのフォルダを強制認識させる
+          qmk setup -y --home $(pwd)
+          # makeではなく、確実なqmk compileコマンドを使用する（キーマップはvialを指定）
+          qmk compile -kb holykeebs/keyball61 -km vial
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
