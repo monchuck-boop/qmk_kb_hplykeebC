@@ -24,15 +24,19 @@ jobs:
         path: users/holykeebs
         persist-credentials: false
 
-    - name: Disable Werror and Build
+    - name: Disable Werror, Inject Keys and Build
       run: |
         git config --global --add safe.directory $(pwd)
         
-        # 設定ファイル内の「-Werror」という記述を力技で完全に削ぎ落とす（警告による停止を物理的に無効化）
+        # 警告による停止を物理的に無効化
         if [ -f "builddefs/common_rules.mk" ]; then
           sed -i 's/-Werror//g' builddefs/common_rules.mk
         fi
         
+        # ドラッグスクロール関数の迷子（未定義エラー）を防ぐため、設定を強制的に流し込む
+        echo "#define KEYBALL_DRAGSCROLL_ENABLE" >> keyboards/holykeebs/keyball61/config.h
+        
+        # 全オプションを最適化してコンパイルを実行
         qmk compile -kb holykeebs/keyball61 -km vial -e USER_NAME=holykeebs
 
     - name: Gather Firmware File
