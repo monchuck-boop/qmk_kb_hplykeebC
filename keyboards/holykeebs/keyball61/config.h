@@ -38,7 +38,8 @@
 
 // Hires scroll is on (rules.mk), so mousekey wheel events are one notch each.
 #define MOUSEKEY_WHEEL_DELTA 120
-
+// 修正前: #define SPLIT_HAND_PIN GP21
+#define SPLIT_HAND_PIN GP29
 #ifdef RGB_MATRIX_ENABLE
 #    define RGB_MATRIX_MAXIMUM_BRIGHTNESS 120  // limit for power consumption
 #    define RGB_MATRIX_SLEEP                   // turn off LEDs when host is asleep
