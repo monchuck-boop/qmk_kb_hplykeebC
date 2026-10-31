@@ -23,3 +23,8 @@
 #define VIAL_KEYBOARD_UID {0xD7, 0x48, 0x4C, 0x7C, 0xE4, 0xBD, 0x28, 0xD5}
 #define VIAL_UNLOCK_COMBO_ROWS { 0, 5 }
 #define VIAL_UNLOCK_COMBO_COLS { 0, 0 }
+
+
+// データ不正エラーを防ぐダミーピンと、内部メモリ(EEPROM)左右判別をここにも明示する
+#define SPLIT_HAND_PIN GP29
+#define EE_HANDS
