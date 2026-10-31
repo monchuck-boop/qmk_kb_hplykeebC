@@ -16,6 +16,11 @@ jobs:
         persist-credentials: false
         submodules: recursive
 
+    - name: Fetch Holykeebs Userspace
+      run: |
+        git config --global --add safe.directory $(pwd)
+        git clone https://github.com users/holykeebs
+
     - name: Build Firmware
       run: |
         git config --global --add safe.directory $(pwd)
