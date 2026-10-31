@@ -42,11 +42,14 @@
 // データ不正エラーを防ぐダミーピン
 #define SPLIT_HAND_PIN GP29
 
-// 【本命の修正】右手(子機)のピンマトリクス定義を、本家基板のDuplex回路(逆ダイオード構造)に強制固定する
+// 右手(子機)のピンマトリクスを本家基板の配線に固定
 #define MATRIX_ROW_PINS_RIGHT { GP4, GP5, GP6, GP7, GP8 }
 #define MATRIX_COL_PINS_RIGHT { GP29, GP28, GP27, GP26 }
+
+// 【完全な解決策】本家基板特有の「右親指回路(逆ダイオード構造)」を正しくスキャンするため、
+// 右手側(子機側)の電気の流れる向き(ダイオード方向)を強制的に逆転・補正する
+#define DIODE_DIRECTION_RIGHT COL2ROW
 
 // トラックボールとドラッグスクロールを強制的に有効化
 #define POINTING_DEVICE_ENABLE
 #define KEYBALL_DRAGSCROLL_ENABLE
-
