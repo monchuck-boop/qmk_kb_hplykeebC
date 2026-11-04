@@ -1,0 +1,89 @@
+name: Cleanup Folders & Build Keyball61 Right
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/qmk/qmk_cli:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Disable git safe directory checks
+        run: git config --global --add safe.directory '*'
+
+      - name: Fix QMK CLI & Source Code Internal Python Bug (Deep Search Fix)
+        run: |
+          echo "Searching and fixing math.py across the system..."
+          find / -name "math.py" -path "*qmk*" 2>/dev/null | while read -r file; do
+            sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
+          done
+
+      - name: Organize Folders (Keep Keyball, Move Up, Delete Holykeebs)
+        run: |
+          echo "=== 📂 1. holykeebs フォルダの削除 ==="
+          if [ -d "keyboards/holykeebs" ]; then
+            rm -rf keyboards/holykeebs
+            echo "Deleted: keyboards/holykeebs"
+          elif [ -d "holykeebs" ]; then
+            rm -rf holykeebs
+            echo "Deleted: holykeebs"
+          fi
+
+          echo "=== 📂 2. keyball 以外の不要なキーボードフォルダを削除 ==="
+          if [ -d "keyboards" ]; then
+            find keyboards/ -maxdepth 1 -mindepth 1 -not -name "*keyball*" -exec rm -rf {} +
+            echo "Cleaned up other keyboards inside 'keyboards/' folder."
+          fi
+
+          echo "=== 📂 3. keyball フォルダを1階層上に移動 ==="
+          # keyboards/keyball が存在する場合、一時的に退避させてから直下に配置
+          if [ -d "keyboards/keyball" ]; then
+            mv keyboards/keyball ./keyball_temp
+            rm -rf keyboards
+            mv ./keyball_temp ./keyboards
+            echo "Moved 'keyball' folder 1 level up. Now it is 'keyboards/keyball'."
+          fi
+
+      - name: Configure Hardware (Right Hand & GP17 Fix)
+        run: |
+          # 整理後のパスにある config.h を狙い撃ち
+          CONFIG_PATH="keyboards/keyball61/config.h"
+          if [ ! -f "$CONFIG_PATH" ]; then
+            CONFIG_PATH="keyboards/keyball/keyball61/config.h"
+          fi
+          
+          echo "Target config.h found at: $CONFIG_PATH"
+          
+          if [ -f "$CONFIG_PATH" ]; then
+            # 右手単独動作のための設定を追加
+            echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
+            
+            # 【パターン①】MATRIX_COL_PINS の右から2番目を GP17 に差し替え
+            sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
+          else
+            echo "ERROR: config.h not found after folder reorganization."
+            exit 1
+          fi
+
+      - name: Auto-Detect New Keyboard Name & Compile
+        run: |
+          # フォルダを綺麗に移動した状態から、改めて最適なキーボード名を自動検出します
+          KEYBOARD_PATH=$(find keyboards/ -name "info.json" -o -name "rules.mk" | grep -i "keyball" | head -n 1)
+          KB_NAME=$(echo "$KEYBOARD_PATH" | sed -e 's|keyboards/||' -e 's|/info.json||' -e 's|/rules.mk||' -e 's|^\./||')
+          
+          echo "=============================================="
+          echo "New Detected Keyboard Name: '$KB_NAME'"
+          echo "=============================================="
+          
+          if [ -n "$KB_NAME" ]; then
+            qmk compile -kb "$KB_NAME" -km default
+          else
+            echo "ERROR: Could not detect the keyboard folder name after layout change."
+            exit 1
+          fi
