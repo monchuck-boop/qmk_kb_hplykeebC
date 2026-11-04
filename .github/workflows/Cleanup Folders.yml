@@ -1,4 +1,4 @@
-name: Build Keyball61 Right Hand Only (Simple Test)
+name: Build Keyball61 Right Hand Only (Auto Target)
 
 on:
   push:
@@ -28,8 +28,11 @@ jobs:
 
       - name: STEP1 - Find and Modify config.h Only
         run: |
-          # フォルダ移動などはせず、今リポジトリ内にある 'config.h' を全階層から自動で見つけます
-          CONFIG_PATH=$(find . -name "config.h" | head -n 1)
+          # リポジトリ内から 'keyball' に関連する config.h を自動探索
+          CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball" | head -n 1)
+          if [ -z "$CONFIG_PATH" ]; then
+            CONFIG_PATH=$(find . -name "config.h" | head -n 1)
+          fi
           
           echo "=============================================="
           echo "Verified target path: '$CONFIG_PATH'"
@@ -39,7 +42,7 @@ jobs:
             # 右手単独動作の設定を追加
             echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
             
-            # 【パターン①】MATRIX_COL_PINS の右から2番目（COL2）を GP17 に差し替え
+            # 【パターン①】MATRIX_COL_PINS の右から2番目を GP17 に差し替え
             sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
             echo "Successfully patched config.h!"
           else
@@ -47,7 +50,24 @@ jobs:
             exit 1
           fi
 
-      - name: STEP2 - Compile Keyball61
+      - name: STEP2 - Find Keyboard Directory Name & Compile
         run: |
-          # フォルダ構造に依存しないよう、QMKに登録されている正確なフォルダ名を渡してコンパイル
-          qmk compile -kb keyball61 -km default || qmk compile -kb keyball/keyball61 -km default
+          # 書き換えた config.h がある親フォルダ名から、QMK用のキーボード名を逆算します
+          CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball" | head -n 1)
+          if [ -z "$CONFIG_PATH" ]; then CONFIG_PATH=$(find . -name "config.h" | head -n 1); fi
+          
+          # パス（例: keyboards/keyball/keyball61/config.h）から 'keyboards/' と '/config.h' を除外
+          KB_NAME=$(echo "$CONFIG_PATH" | sed -e 's|/config.h||' -e 's|keyboards/||' -e 's|^\./||')
+          
+          echo "=============================================="
+          echo "Target Keyboard Name Detected: '$KB_NAME'"
+          echo "=============================================="
+          
+          if [ -n "$KB_NAME" ]; then
+            qmk compile -kb "$KB_NAME" -km default
+          else
+            # 逆算に失敗した場合はリポジトリ全体のキーボードリストを出力してエラー停止
+            echo "Available keyboards in this workspace:"
+            qmk list-keyboards
+            exit 1
+          fi
