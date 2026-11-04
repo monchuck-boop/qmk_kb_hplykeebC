@@ -28,14 +28,11 @@ jobs:
 
       - name: STEP1 - 欠落している holykeebs.h の定義を復元
         run: |
-          # フォルダ削除で一緒に消えてしまった共通定義ファイルを、ビルドの直前に自動で復元します
+          # フォルダ削除で一緒に消えてしまった共通定義ファイルを復元
           mkdir -p users/holykeebs
           cat << 'EOF' > users/holykeebs/holykeebs.h
           #pragma once
           #include "quantum.h"
-
-          #undef NUM_ENCODERMAP_LAYERS_RAW
-          #define NUM_ENCODERMAP_LAYERS_RAW NUM_KEYMAP_LAYERS_RAW
 
           enum holykeebs_keycodes {
               HK_D_MODE = SAFE_RANGE, HK_S_MODE, HK_DUMP, HK_SAVE, HK_RESET,
