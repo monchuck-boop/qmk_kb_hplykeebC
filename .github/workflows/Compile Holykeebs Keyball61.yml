@@ -1,6 +1,8 @@
-name: Build Keyball61 Right Hand Only (New Base Fix)
+name: Build Keyball61 Right Hand Only (Fixed Base)
 
 on:
+  push:
+    branches: [ '**' ]
   workflow_dispatch:
 
 jobs:
@@ -19,34 +21,48 @@ jobs:
 
       - name: Fix QMK CLI & Source Code Internal Python Bug (Deep Search Fix)
         run: |
-          echo "Searching and fixing math.py across the system..."
+          echo "Searching and fixing math.py..."
           find / -name "math.py" -path "*qmk*" 2>/dev/null | while read -r file; do
             sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
           done
 
-      - name: Configure Hardware (Right Hand & GP17 Auto-Path Fix)
+      - name: STEP1 - 欠落している holykeebs.h の定義を復元
         run: |
-          # リポジトリ内にある 'config.h' の場所を自動検索してパスを特定します
-          CONFIG_PATH=$(find . -name "config.h" -path "*keyball61*" | head -n 1)
+          # フォルダ削除で一緒に消えてしまった共通定義ファイルを、ビルドの直前に自動で復元します
+          mkdir -p users/holykeebs
+          cat << 'EOF' > users/holykeebs/holykeebs.h
+          #pragma once
+          #include "quantum.h"
+
+          #undef NUM_ENCODERMAP_LAYERS_RAW
+          #define NUM_ENCODERMAP_LAYERS_RAW NUM_KEYMAP_LAYERS_RAW
+
+          enum holykeebs_keycodes {
+              HK_D_MODE = SAFE_RANGE, HK_S_MODE, HK_DUMP, HK_SAVE, HK_RESET,
+              HK_BONGO_T, HK_C_SCROLL, HK_P_SET_D, HK_P_SET_S, HK_P_SET_THR,
+              HK_S_MODE_T, HK_D_MODE_T, HK_I_SCROLL, HK_AML_T, HK_AML_UP,
+              HK_AML_DN, HK_ENC_SCR_D, HK_ENC_SCR_U, HK_NEW_SAFE_RANGE
+          };
+          EOF
+
+      - name: STEP2 - 右手単体化 & GP17の配線修正を適用
+        run: |
+          CONFIG_PATH="keyboards/holykeebs/keyball61plus/config.h"
+          echo "Targeting config.h at: $CONFIG_PATH"
           
-          if [ -z "$CONFIG_PATH" ]; then
-            CONFIG_PATH=$(find . -name "config.h" | head -n 1)
-          fi
-          
-          echo "Target config.h found at: $CONFIG_PATH"
-          
-          if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
-            # 右手単独動作のための設定を追加
+          if [ -f "$CONFIG_PATH" ]; then
+            # 右手単独動作の設定を追加
             echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
             
-            # 【パターン①】MATRIX_COL_PINS の右から2番目（COL2）を GP17 に差し替え
+            # 【パターン①】MATRIX_COL_PINS の右から2番目を GP17 に差し替え
             sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
+            echo "Successfully patched Keyball61 config.h!"
           else
-            echo "ERROR: config.h not found in this repository."
+            echo "ERROR: config.h not found at $CONFIG_PATH"
             exit 1
           fi
 
-      - name: Compile Keyball61
+      - name: STEP3 - コンパイルを実行
         run: |
-          # 新しいリポジトリの構造に合わせてキーボード名を 'keyball61' に変更してコンパイル
-          qmk compile -kb keyball61 -km default
+          # 正しいキーボード名に変更してコンパイル
+          qmk compile -kb holykeebs/keyball61plus -km default
