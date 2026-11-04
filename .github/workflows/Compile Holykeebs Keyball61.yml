@@ -28,7 +28,6 @@ jobs:
 
       - name: STEP1 - 欠落している holykeebs.h の定義を復元
         run: |
-          # フォルダ削除で一緒に消えてしまった共通定義ファイルを復元
           mkdir -p users/holykeebs
           cat << 'EOF' > users/holykeebs/holykeebs.h
           #pragma once
@@ -48,10 +47,7 @@ jobs:
           echo "Targeting config.h at: $CONFIG_PATH"
           
           if [ -f "$CONFIG_PATH" ]; then
-            # 右手単独動作の設定を追加
             echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
-            
-            # 【パターン①】MATRIX_COL_PINS の右から2番目を GP17 に差し替え
             sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
             echo "Successfully patched Keyball61 config.h!"
           else
@@ -61,5 +57,13 @@ jobs:
 
       - name: STEP3 - コンパイルを実行
         run: |
-          # 正しいキーボード名に変更してコンパイル
           qmk compile -kb holykeebs/keyball61plus -km default
+
+      # ⬇️ ⚠️追加：完成した .uf2 ファイルを画面に出力する設定
+      - name: STEP4 - 生成されたファームウェア (.uf2) を保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyball61plus_right_firmware
+          path: |
+            *.uf2
+            .build/*.uf2
