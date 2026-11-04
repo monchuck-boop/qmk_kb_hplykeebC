@@ -1,56 +1,51 @@
-name: Build Holykeebs Keyball61 Vial Fixed
+name: Build Keyball61 Right Hand Only (New Base Fix)
 
 on:
-  workflow_dispatch: # 手動実行
-  push:
-    branches: [ main, master ] # mainかmasterブランチにプッシュされた時も実行
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build Holykeebs Keyball61
     runs-on: ubuntu-latest
-    container: ghcr.io/qmk/qmk_cli@sha256:2dc05fc9f32efebd6b05c2b8676ee548358bc7e151e9dbf4dac6b6eed4513b07
+    container: ghcr.io/qmk/qmk_cli:latest
 
     steps:
-    - name: Checkout Vial repo
-      uses: actions/checkout@v4
-      with:
-        persist-credentials: false
-        submodules: recursive
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Checkout Holykeebs Userspace (Safe Method)
-      uses: actions/checkout@v4
-      with:
-        repository: holykeebs/qmk-userspace
-        ref: hk-master
-        path: qmk-userspace
-        persist-credentials: false
+      - name: Disable git safe directory checks
+        run: git config --global --add safe.directory '*'
 
-    - name: Complete Fix and Build
-      run: |
-        git config --global --add safe.directory $(pwd)
-        
-        # 1. 警告による停止を物理的に無効化
-        if [ -f "builddefs/common_rules.mk" ]; then
-          sed -i 's/-Werror//g' builddefs/common_rules.mk
-        fi
-        
-        # 2. Holykeebsのビルドシステムが要求するパスにUserspaceの環境変数を確実に通す
-        export QMK_USERSPACE="${GITHUB_WORKSPACE}/qmk-userspace"
-        
-        # 3. 大元のmakeコマンドでビルド
-        make holykeebs/keyball61:vial -e USER_NAME=holykeebs
+      - name: Fix QMK CLI & Source Code Internal Python Bug (Deep Search Fix)
+        run: |
+          echo "Searching and fixing math.py across the system..."
+          find / -name "math.py" -path "*qmk*" 2>/dev/null | while read -r file; do
+            sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
+          done
 
-    - name: Gather Firmware File
-      run: |
-        mkdir -p output_firmware
-        find .build/ -name "*.uf2" -exec cp {} ./output_firmware/ \;
-        find . -name "*.uf2" -exec cp {} ./output_firmware/ \;
+      - name: Configure Hardware (Right Hand & GP17 Auto-Path Fix)
+        run: |
+          # リポジトリ内にある 'config.h' の場所を自動検索してパスを特定します
+          CONFIG_PATH=$(find . -name "config.h" -path "*keyball61*" | head -n 1)
+          
+          # もし見つからなければ、リポジトリ全体から config.h を探します
+          if [ -z "$CONFIG_PATH" ]; then
+            CONFIG_PATH=$(find . -name "config.h" | head -n 1)
+          fi
+          
+          echo "Target config.h found at: $CONFIG_PATH"
+          
+          if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
+            # 右手単独動作のための設定を追加
+            echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
+            
+            # MATRIX_COL_PINS を正常な4本配列ベースの「最後をGP17に変えたもの」に強制置換
+            sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP27, GP17 }/g' "$CONFIG_PATH"
+          else
+            echo "ERROR: config.h not found in this repository."
+            exit 1
+          fi
 
-    - name: Upload Finished Firmware
-      uses: actions/upload-artifact@v4
-      with:
-        name: keyball61-vial-fixed-firmware
-        path: output_firmware/
+      - name: Compile Keyball61
+        run: qmk compile -kb keyball/keyball61 -km default
