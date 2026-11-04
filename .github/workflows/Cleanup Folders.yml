@@ -1,6 +1,5 @@
-name: Build Keyball61 Right Hand Only (Fixed Path)
+name: Build Keyball61 Right Hand Only (Simple Test)
 
-# ⬇️ ここを「ボタン」から「プッシュされたら自動スタート」に変更しました
 on:
   push:
     branches: [ '**' ]
@@ -22,25 +21,33 @@ jobs:
 
       - name: Fix QMK CLI & Source Code Internal Python Bug (Deep Search Fix)
         run: |
-          echo "Searching and fixing math.py across the system..."
+          echo "Searching and fixing math.py..."
           find / -name "math.py" -path "*qmk*" 2>/dev/null | while read -r file; do
             sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
           done
 
-      - name: Configure Hardware (Keyball61 Right Hand & GP17 Fix)
+      - name: STEP1 - Find and Modify config.h Only
         run: |
-          CONFIG_PATH="keyboards/keyball/keyball61/config.h"
-          echo "Targeting config.h at: $CONFIG_PATH"
+          # フォルダ移動などはせず、今リポジトリ内にある 'config.h' を全階層から自動で見つけます
+          CONFIG_PATH=$(find . -name "config.h" | head -n 1)
           
-          if [ -f "$CONFIG_PATH" ]; then
+          echo "=============================================="
+          echo "Verified target path: '$CONFIG_PATH'"
+          echo "=============================================="
+          
+          if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
+            # 右手単独動作の設定を追加
             echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
+            
+            # 【パターン①】MATRIX_COL_PINS の右から2番目（COL2）を GP17 に差し替え
             sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
-            echo "Successfully patched Keyball61 config.h!"
+            echo "Successfully patched config.h!"
           else
-            echo "ERROR: Keyball61 config.h not found at $CONFIG_PATH"
+            echo "ERROR: config.h could not be found anywhere in this repository."
             exit 1
           fi
 
-      - name: Compile Keyball61
+      - name: STEP2 - Compile Keyball61
         run: |
-          qmk compile -kb keyball/keyball61 -km default
+          # フォルダ構造に依存しないよう、QMKに登録されている正確なフォルダ名を渡してコンパイル
+          qmk compile -kb keyball61 -km default || qmk compile -kb keyball/keyball61 -km default
