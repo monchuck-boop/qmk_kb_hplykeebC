@@ -1,4 +1,4 @@
-name: Cleanup Folders & Build Keyball61 Right
+name: Build Keyball61 Right Hand Only (Fixed Path)
 
 on:
   workflow_dispatch:
@@ -24,54 +24,26 @@ jobs:
             sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
           done
 
-      - name: Organize Folders (Safe Direct Delete)
+      - name: Configure Hardware (Keyball61 Right Hand & GP17 Fix)
         run: |
-          echo "=== 📂 不要なフォルダの削除 ==="
-          # リポジトリ内のどこかに holykeebs があれば安全に消去
-          find . -name "holykeebs" -type d -exec rm -rf {} + 2>/dev/null || true
-
-      - name: Configure Hardware (Direct Auto-Locate config.h)
-        run: |
-          # フォルダを移動させず、今リポジトリ内にある 'config.h' を全階層から自動で見つけます
-          CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball61" | head -n 1)
-          if [ -z "$CONFIG_PATH" ]; then
-            CONFIG_PATH=$(find . -name "config.h" | head -n 1)
-          fi
+          # Keyball61の正確なフォルダパスを直接指定
+          CONFIG_PATH="keyboards/keyball/keyball61/config.h"
           
-          echo "=============================================="
-          echo "Found Target config.h at: '$CONFIG_PATH'"
-          echo "=============================================="
+          echo "Targeting config.h at: $CONFIG_PATH"
           
-          if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
+          if [ -f "$CONFIG_PATH" ]; then
             # 右手単独動作のための設定を追加
             echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
             
-            # 【パターン①】MATRIX_COL_PINS の右から2番目を GP17 に差し替え
+            # 【パターン①】MATRIX_COL_PINS の右から2番目（COL2）を GP17 に差し替え
             sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
-            echo "Successfully patched config.h!"
+            echo "Successfully patched Keyball61 config.h!"
           else
-            echo "ERROR: config.h could not be found anywhere in the repository."
+            echo "ERROR: Keyball61 config.h not found at $CONFIG_PATH"
             exit 1
           fi
 
-      - name: Auto-Detect Keyboard Name & Compile
+      - name: Compile Keyball61
         run: |
-          # info.json がある場所を基準に、QMKが要求する正しいキーボードフォルダ名を割り出します
-          INFO_PATH=$(find . -name "info.json" | grep -i "keyball61" | head -n 1)
-          if [ -z "$INFO_PATH" ]; then
-            INFO_PATH=$(find . -name "info.json" | head -n 1)
-          fi
-          
-          # パス（例: ./keyboards/keyball/keyball61/info.json や ./keyball61/info.json）から名前を抽出
-          KB_NAME=$(echo "$INFO_PATH" | sed -e 's|/info.json||' -e 's|^\./||' -e 's|keyboards/||')
-          
-          echo "=============================================="
-          echo "Calculated Keyboard Name for QMK: '$KB_NAME'"
-          echo "=============================================="
-          
-          if [ -n "$KB_NAME" ]; then
-            qmk compile -kb "$KB_NAME" -km default
-          else
-            echo "ERROR: Could not calculate keyboard name."
-            exit 1
-          fi
+          # 迷いようのない正確なキーボード名でコンパイルを実行
+          qmk compile -kb keyball/keyball61 -km default
