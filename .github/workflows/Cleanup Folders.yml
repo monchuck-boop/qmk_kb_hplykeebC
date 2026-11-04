@@ -1,6 +1,9 @@
 name: Build Keyball61 Right Hand Only (Fixed Path)
 
+# ⬇️ ここを「ボタン」から「プッシュされたら自動スタート」に変更しました
 on:
+  push:
+    branches: [ '**' ]
   workflow_dispatch:
 
 jobs:
@@ -26,16 +29,11 @@ jobs:
 
       - name: Configure Hardware (Keyball61 Right Hand & GP17 Fix)
         run: |
-          # Keyball61の正確なフォルダパスを直接指定
           CONFIG_PATH="keyboards/keyball/keyball61/config.h"
-          
           echo "Targeting config.h at: $CONFIG_PATH"
           
           if [ -f "$CONFIG_PATH" ]; then
-            # 右手単独動作のための設定を追加
             echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
-            
-            # 【パターン①】MATRIX_COL_PINS の右から2番目（COL2）を GP17 に差し替え
             sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
             echo "Successfully patched Keyball61 config.h!"
           else
@@ -45,5 +43,4 @@ jobs:
 
       - name: Compile Keyball61
         run: |
-          # 迷いようのない正確なキーボード名でコンパイルを実行
           qmk compile -kb keyball/keyball61 -km default
