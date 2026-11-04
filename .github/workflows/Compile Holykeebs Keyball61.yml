@@ -1,7 +1,11 @@
 name: Build Holykeebs Keyball61 Vial Fixed
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # 手動実行
+  push:
+    branches: [ main, master ] # mainかmasterブランチにプッシュされた時も実行
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
@@ -33,10 +37,10 @@ jobs:
           sed -i 's/-Werror//g' builddefs/common_rules.mk
         fi
         
-        # 2. 【超重要】Holykeebsのビルドシステムが要求するパスにUserspaceの環境変数を確実に通す
+        # 2. Holykeebsのビルドシステムが要求するパスにUserspaceの環境変数を確実に通す
         export QMK_USERSPACE="${GITHUB_WORKSPACE}/qmk-userspace"
         
-        # 3. qmk compileを使わず、大元のmakeコマンドで確実にuserspaceの関数をすべて結合してビルドする
+        # 3. 大元のmakeコマンドでビルド
         make holykeebs/keyball61:vial -e USER_NAME=holykeebs
 
     - name: Gather Firmware File
