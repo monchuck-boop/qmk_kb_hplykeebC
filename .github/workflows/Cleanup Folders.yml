@@ -24,45 +24,23 @@ jobs:
             sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
           done
 
-      - name: Organize Folders (Keep Keyball, Move Up, Delete Holykeebs)
+      - name: Organize Folders (Safe Direct Delete)
         run: |
-          echo "=== 📂 1. holykeebs フォルダの削除 ==="
-          if [ -d "keyboards/holykeebs" ]; then
-            rm -rf keyboards/holykeebs
-            echo "Deleted: keyboards/holykeebs"
-          elif [ -d "holykeebs" ]; then
-            rm -rf holykeebs
-            echo "Deleted: holykeebs"
-          fi
+          echo "=== 📂 不要なフォルダの削除 ==="
+          # リポジトリ内のどこかに holykeebs があれば安全に消去
+          find . -name "holykeebs" -type d -exec rm -rf {} + 2>/dev/null || true
 
-          echo "=== 📂 2. keyball 以外の不要なキーボードフォルダを削除 ==="
-          if [ -d "keyboards" ]; then
-            find keyboards/ -maxdepth 1 -mindepth 1 -not -name "*keyball*" -exec rm -rf {} +
-            echo "Cleaned up other keyboards inside 'keyboards/' folder."
-          fi
-
-          echo "=== 📂 3. keyball フォルダを1階層上に移動 ==="
-          if [ -d "keyboards/keyball" ]; then
-            mv keyboards/keyball ./keyball_temp
-            rm -rf keyboards
-            mv ./keyball_temp ./keyboards
-            echo "Moved 'keyball' folder 1 level up. Now it is 'keyboards/keyball'."
-          fi
-
-      - name: Configure Hardware (Right Hand & GP17 Fix)
+      - name: Configure Hardware (Direct Auto-Locate config.h)
         run: |
-          # 存在するパスを上から順番にチェックして確実に特定します
-          CONFIG_PATH=""
-          if [ -f "keyboards/keyball/keyball61/config.h" ]; then
-            CONFIG_PATH="keyboards/keyball/keyball61/config.h"
-          elif [ -f "keyboards/keyball61/config.h" ]; then
-            CONFIG_PATH="keyboards/keyball61/config.h"
-          else
-            # 見つからない場合は自動検索
-            CONFIG_PATH=$(find keyboards/ -name "config.h" | grep -i "keyball61" | head -n 1)
+          # フォルダを移動させず、今リポジトリ内にある 'config.h' を全階層から自動で見つけます
+          CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball61" | head -n 1)
+          if [ -z "$CONFIG_PATH" ]; then
+            CONFIG_PATH=$(find . -name "config.h" | head -n 1)
           fi
           
-          echo "Verified config.h target path: $CONFIG_PATH"
+          echo "=============================================="
+          echo "Found Target config.h at: '$CONFIG_PATH'"
+          echo "=============================================="
           
           if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
             # 右手単独動作のための設定を追加
@@ -70,25 +48,30 @@ jobs:
             
             # 【パターン①】MATRIX_COL_PINS の右から2番目を GP17 に差し替え
             sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
-            echo "Successfully updated MATRIX_COL_PINS in config.h"
+            echo "Successfully patched config.h!"
           else
-            echo "ERROR: config.h could not be verified on the file system."
+            echo "ERROR: config.h could not be found anywhere in the repository."
             exit 1
           fi
 
-      - name: Auto-Detect New Keyboard Name & Compile
+      - name: Auto-Detect Keyboard Name & Compile
         run: |
-          # フォルダ移動後の構造から正式なキーボード名を検出
-          KEYBOARD_PATH=$(find keyboards/ -name "info.json" -o -name "rules.mk" | grep -i "keyball" | head -n 1)
-          KB_NAME=$(echo "$KEYBOARD_PATH" | sed -e 's|keyboards/||' -e 's|/info.json||' -e 's|/rules.mk||' -e 's|^\./||')
+          # info.json がある場所を基準に、QMKが要求する正しいキーボードフォルダ名を割り出します
+          INFO_PATH=$(find . -name "info.json" | grep -i "keyball61" | head -n 1)
+          if [ -z "$INFO_PATH" ]; then
+            INFO_PATH=$(find . -name "info.json" | head -n 1)
+          fi
+          
+          # パス（例: ./keyboards/keyball/keyball61/info.json や ./keyball61/info.json）から名前を抽出
+          KB_NAME=$(echo "$INFO_PATH" | sed -e 's|/info.json||' -e 's|^\./||' -e 's|keyboards/||')
           
           echo "=============================================="
-          echo "Compiling Keyboard Name: '$KB_NAME'"
+          echo "Calculated Keyboard Name for QMK: '$KB_NAME'"
           echo "=============================================="
           
           if [ -n "$KB_NAME" ]; then
             qmk compile -kb "$KB_NAME" -km default
           else
-            echo "ERROR: Could not detect the keyboard name for compilation."
+            echo "ERROR: Could not calculate keyboard name."
             exit 1
           fi
