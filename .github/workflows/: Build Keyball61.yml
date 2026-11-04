@@ -1,0 +1,37 @@
+name: Build Keyball61 Right Hand Only (New Base)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/qmk/qmk_cli:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Disable git safe directory checks
+        run: git config --global --add safe.directory '*'
+
+      - name: Fix QMK CLI & Source Code Internal Python Bug (Deep Search Fix)
+        run: |
+          echo "Searching and fixing math.py across the system..."
+          find / -name "math.py" -path "*qmk*" 2>/dev/null | while read -r file; do
+            sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
+          done
+
+      - name: Configure Hardware (Right Hand & GP17 Force Fix)
+        run: |
+          # 1. 右手単独動作のための設定を追加
+          echo "#define MASTER_RIGHT" >> keyboards/keyball/keyball61/config.h
+          
+          # 2. config.h 内の MATRIX_COL_PINS を、元の記述が何であっても
+          # 正常に動いていた4本配列ベースの「最後をGP17に変えたもの」に強制上書きします
+          sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP27, GP17 }/g' keyboards/keyball/keyball61/config.h
+
+      - name: Compile Keyball61
+        run: qmk compile -kb keyball/keyball61 -km default
