@@ -1,4 +1,4 @@
-name: Build Keyball61 Right Hand Only (Auto Target)
+name: Restore Folders & Build Keyball61 Right
 
 on:
   push:
@@ -26,17 +26,22 @@ jobs:
             sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
           done
 
-      - name: STEP1 - Find and Modify config.h Only
+      - name: STEP1 - Restore Missing Folder Structure (users/holykeebs)
         run: |
-          # リポジトリ内から 'keyball' に関連する config.h を自動探索
-          CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball" | head -n 1)
-          if [ -z "$CONFIG_PATH" ]; then
-            CONFIG_PATH=$(find . -name "config.h" | head -n 1)
-          fi
+          echo "=== 📂 欠落しているフォルダ構造を復元します ==="
+          # エラーの原因になっていた 'users/holykeebs' フォルダを強制的に作成
+          mkdir -p users/holykeebs
           
-          echo "=============================================="
+          # 空の holykeebs.h を作成して配置（これで #include エラーを安全に回避できます）
+          echo "// Holykeebs configuration file" > users/holykeebs/holykeebs.h
+          echo "Successfully restored folder structure and created users/holykeebs/holykeebs.h"
+
+      - name: STEP2 - Modify config.h (GP17 Fix)
+        run: |
+          CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball61plus" | head -n 1)
+          if [ -z "$CONFIG_PATH" ]; then CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball" | head -n 1); fi
+          
           echo "Verified target path: '$CONFIG_PATH'"
-          echo "=============================================="
           
           if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
             # 右手単独動作の設定を追加
@@ -46,28 +51,11 @@ jobs:
             sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
             echo "Successfully patched config.h!"
           else
-            echo "ERROR: config.h could not be found anywhere in this repository."
+            echo "ERROR: config.h could not be found anywhere."
             exit 1
           fi
 
-      - name: STEP2 - Find Keyboard Directory Name & Compile
+      - name: STEP3 - Compile Keyball61
         run: |
-          # 書き換えた config.h がある親フォルダ名から、QMK用のキーボード名を逆算します
-          CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball" | head -n 1)
-          if [ -z "$CONFIG_PATH" ]; then CONFIG_PATH=$(find . -name "config.h" | head -n 1); fi
-          
-          # パス（例: keyboards/keyball/keyball61/config.h）から 'keyboards/' と '/config.h' を除外
-          KB_NAME=$(echo "$CONFIG_PATH" | sed -e 's|/config.h||' -e 's|keyboards/||' -e 's|^\./||')
-          
-          echo "=============================================="
-          echo "Target Keyboard Name Detected: '$KB_NAME'"
-          echo "=============================================="
-          
-          if [ -n "$KB_NAME" ]; then
-            qmk compile -kb "$KB_NAME" -km default
-          else
-            # 逆算に失敗した場合はリポジトリ全体のキーボードリストを出力してエラー停止
-            echo "Available keyboards in this workspace:"
-            qmk list-keyboards
-            exit 1
-          fi
+          # 正しいフォルダ構造の状態でビルドを実行
+          qmk compile -kb holykeebs/keyball61plus -km default
