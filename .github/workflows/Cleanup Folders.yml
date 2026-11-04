@@ -1,4 +1,4 @@
-name: Restore Folders & Build Keyball61 Right
+name: 一括フォルダ整理 (holykeebs以外を削除)
 
 on:
   push:
@@ -6,79 +6,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  cleanup:
     runs-on: ubuntu-latest
-    container: ghcr.io/qmk/qmk_cli:latest
 
     steps:
-      - name: Checkout repository
+      - name: リポジトリのチェックアウト
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      - name: Disable git safe directory checks
-        run: git config --global --add safe.directory '*'
-
-      - name: Fix QMK CLI & Source Code Internal Python Bug (Deep Search Fix)
+      - name: holykeebs 以外のフォルダを一括削除
         run: |
-          echo "Searching and fixing math.py..."
-          find / -name "math.py" -path "*qmk*" 2>/dev/null | while read -r file; do
-            sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
-          done
-
-      - name: STEP1 - Restore Missing Folder Structure & Enum Definitions
-        run: |
-          echo "=== 📂 欠落している holykeebs.h の定義を完全復元します ==="
-          mkdir -p users/holykeebs
+          echo "=== 🧹 フォルダの一括整理を開始します ==="
           
-          # keymap.c が要求しているすべてのカスタムキーコードを定義ファイルとして再現します
-          cat << 'EOF' > users/holykeebs/holykeebs.h
-          #pragma once
-          #include "quantum.h"
-
-          enum holykeebs_keycodes {
-              HK_D_MODE = SAFE_RANGE,
-              HK_S_MODE,
-              HK_DUMP,
-              HK_SAVE,
-              HK_RESET,
-              HK_BONGO_T,
-              HK_C_SCROLL,
-              HK_P_SET_D,
-              HK_P_SET_S,
-              HK_P_SET_THR,
-              HK_S_MODE_T,
-              HK_D_MODE_T,
-              HK_I_SCROLL,
-              HK_AML_T,
-              HK_AML_UP,
-              HK_AML_DN,
-              HK_NEW_SAFE_RANGE
-          };
-          EOF
-          
-          echo "Successfully restored full folder structure and keycode enum definitions!"
-
-      - name: STEP2 - Modify config.h (GP17 Fix)
-        run: |
-          CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball61plus" | head -n 1)
-          if [ -z "$CONFIG_PATH" ]; then CONFIG_PATH=$(find . -name "config.h" | grep -i "keyball" | head -n 1); fi
-          
-          echo "Verified target path: '$CONFIG_PATH'"
-          
-          if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
-            # 右手単独動作の設定を追加
-            echo "#define MASTER_RIGHT" >> "$CONFIG_PATH"
-            
-            # 【パターン①】MATRIX_COL_PINS の右から2番目を GP17 に差し替え
-            sed -i 's/#define MATRIX_COL_PINS.*/#define MATRIX_COL_PINS { GP29, GP28, GP17, GP26 }/g' "$CONFIG_PATH"
-            echo "Successfully patched config.h!"
+          if [ -d "keyboards" ]; then
+            # keyboards フォルダ直下にあるフォルダのうち、名前に 'holykeebs' が含まれないものをすべて一括削除します
+            find keyboards/ -maxdepth 1 -mindepth 1 -not -name "*holykeebs*" -exec rm -rf {} +
+            echo "holykeebs 以外の不要なキーボードフォルダをすべて削除しました。"
           else
-            echo "ERROR: config.h could not be found anywhere."
-            exit 1
+            echo "keyboards フォルダが見つかりませんでした。"
           fi
 
-      - name: STEP3 - Compile Keyball61
+      - name: 整理後の結果を自動でGitHubに反映（コミット＆プッシュ）
         run: |
-          # 完全に修復された構造の状態でビルドを実行
-          qmk compile -kb holykeebs/keyball61plus -km default
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@://github.com"
+          
+          git add -A
+          if git diff-index --quiet HEAD; then
+            echo "すでに綺麗な状態のため、変更はありません。"
+          else
+            git commit -m "Cleanup: keyboardsフォルダ内をholykeebsだけに一括整理"
+            git push
+            echo "フォルダの削除結果をリポジトリに保存しました！"
+          fi
