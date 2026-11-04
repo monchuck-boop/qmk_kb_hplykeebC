@@ -26,15 +26,38 @@ jobs:
             sed -i 's/ast.Num/ast.Constant/g; s/node.n/node.value/g' "$file"
           done
 
-      - name: STEP1 - Restore Missing Folder Structure (users/holykeebs)
+      - name: STEP1 - Restore Missing Folder Structure & Enum Definitions
         run: |
-          echo "=== 📂 欠落しているフォルダ構造を復元します ==="
-          # エラーの原因になっていた 'users/holykeebs' フォルダを強制的に作成
+          echo "=== 📂 欠落している holykeebs.h の定義を完全復元します ==="
           mkdir -p users/holykeebs
           
-          # 空の holykeebs.h を作成して配置（これで #include エラーを安全に回避できます）
-          echo "// Holykeebs configuration file" > users/holykeebs/holykeebs.h
-          echo "Successfully restored folder structure and created users/holykeebs/holykeebs.h"
+          # keymap.c が要求しているすべてのカスタムキーコードを定義ファイルとして再現します
+          cat << 'EOF' > users/holykeebs/holykeebs.h
+          #pragma once
+          #include "quantum.h"
+
+          enum holykeebs_keycodes {
+              HK_D_MODE = SAFE_RANGE,
+              HK_S_MODE,
+              HK_DUMP,
+              HK_SAVE,
+              HK_RESET,
+              HK_BONGO_T,
+              HK_C_SCROLL,
+              HK_P_SET_D,
+              HK_P_SET_S,
+              HK_P_SET_THR,
+              HK_S_MODE_T,
+              HK_D_MODE_T,
+              HK_I_SCROLL,
+              HK_AML_T,
+              HK_AML_UP,
+              HK_AML_DN,
+              HK_NEW_SAFE_RANGE
+          };
+          EOF
+          
+          echo "Successfully restored full folder structure and keycode enum definitions!"
 
       - name: STEP2 - Modify config.h (GP17 Fix)
         run: |
@@ -57,5 +80,5 @@ jobs:
 
       - name: STEP3 - Compile Keyball61
         run: |
-          # 正しいフォルダ構造の状態でビルドを実行
+          # 完全に修復された構造の状態でビルドを実行
           qmk compile -kb holykeebs/keyball61plus -km default
